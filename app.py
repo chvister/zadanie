@@ -6,6 +6,7 @@ import math
 import time
 import configparser as ConfigParser
 import random
+import serial
 
 async_mode = None
 
@@ -20,6 +21,8 @@ mypasswd = config.get('mysqlDB', 'passwd')
 mydb = config.get('mysqlDB', 'db')
 print(myhost)
 
+ser = serial.Serial('/dev/ttyUSB0',9600)
+read_ser = ser.readline()
 
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
@@ -42,7 +45,8 @@ def background_thread(args):
           dbV = 'nieco'  
         #print A
         print(dbV) 
-        print(args)  
+        print(args)
+        print(float(ser.readline()))
         socketio.sleep(2)
         count += 1
         dataCounter +=1
@@ -51,8 +55,7 @@ def background_thread(args):
           dataDict = {
             "t": time.time(),
             "x": dataCounter,
-            "y": float(A)*math.sin(count/10),
-            "z": float(A)*math.cos(count/10)
+            "y": float(ser.readline()),
             }
           dataList.append(dataDict)
         else:
@@ -73,8 +76,8 @@ def background_thread(args):
             
           dataList = []
           dataCounter = 0
-        socketio.emit('my_response',
-                      {'data': float(A)*prem, 'count': count},
+          socketio.emit('my_response',
+                      {'data': float(ser.readline()), 'count': count},
                       namespace='/test')  
     db.close()
 
