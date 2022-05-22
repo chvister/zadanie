@@ -22,9 +22,9 @@
           renderTo: 'canvasID',
           width: 300,
           height: 300,
-          units: "Km/h",
+          units: "W",
           minValue: 0,
-          maxValue: 1,
+          maxValue: 2,
           majorTicks: [
               "0",
               "0.1",
@@ -36,14 +36,25 @@
               "0.7",
               "0.8",
               "0.9",
-              "1.0"
+              "1.0",
+              "1.1",
+              "1.2",
+              "1.3",
+              "1.4",
+              "1.5",
+              "1.6",
+              "1.7",
+              "1.8",
+              "1.9",
+              "2.0"
+
           ],
           minorTicks: 2,
           strokeTicks: true,
           highlights: [
               {
-                  "from": 0.5,
-                  "to": 1,
+                  "from": 1.5,
+                  "to": 2,
                   "color": "rgba(200, 50, 50, .75)"
               }
           ],
@@ -59,7 +70,7 @@
           animationRule: "linear"
       });
       gauge.draw();
-      gauge.value = "0";    
+      //gauge.value = "0";    
        
       namespace = '/test';
       var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
@@ -104,11 +115,16 @@
         Plotly.newPlot($('#plotdiv')[0], traces, layout);
       });
 
-      $('form#emit').submit(function(event) {
+
+      $('#emit_value').click(function(event) {
+          console.log($('#emit_value').val());
+
           socket.emit('my_event', {value: $('#emit_value').val()});
+       
+        
           return false; });
       $('#buttonVal').click(function(event) {
-          //console.log($('#buttonVal').val());
+          console.log($('#buttonVal').val());
           socket.emit('db_event', {value: $('#buttonVal').val()});
           if ($(this).val() == "start") {
             $(this).val("stop");
@@ -121,17 +137,123 @@
           return false; }); 
       $('form#disconnect').submit(function(event) {
           socket.emit('disconnect_request');
-          return false; });         
+          return false; 
+          
+          }); 
+          
+          
+       
+    
+      $('input#buttonclick').click(function(event) {
+        console.log($('#emit_value-file').val());
+        var index = $('#emit_value-file').val();
+         $.ajax({
+          type: "POST",
+          url: "/read/"+index,
+          success:function(data) 
+      { console.log(data);  
+        data = JSON.parse(data);
+        console.log(data);    
+        n = Object.keys(data).length;
+        console.log(n);
+
+        xl = [];
+        yl = [];
+        for (var i=0; i< n; i++){
+          xl.push(data[i].x);
+          yl.push(data[i].y); 
+          z.push(data[i].z)
+          $('#log-file').append('Received #'+i+': '+data[i].x+', '+data[i].y+'<br>').html(); 
+
+      }
+   
+        trace = {
+            x: xl,
+            y: yl,
+            name:'grafy',
+        };       
+        layout = {
+          title: 'Data',
+          xaxis: {
+              title: 'x',
+          },
+          yaxis: {
+              title: 'y',
+              //range: [-1,1]
+          }
+        };
+        console.log(trace);
+        var traces = new Array();
+        traces.push(trace);
+        Plotly.newPlot($('#plotdiv-file')[0], traces, layout); 
+      }
+    }).done(function( o ) {
+       // do something
+       console.log("log")
+    });    
+          
+      });  
+      
+       $('input#buttonclick-db').click(function(event) {
+        console.log($('#emit_value-db').val());
+        var index = $('#emit_value-db').val();
+         $.ajax({
+          type: "POST",
+          url: "/dbdata/"+index,
+          success:function(data) 
+      { console.log(data);  
+        data = JSON.parse(data);
+        console.log(data);    
+        n = Object.keys(data).length;
+        console.log(n);
+
+        xl = [];
+        yl = [];
+        for (var i=0; i< n; i++){
+          xl.push(data[i].x);
+          yl.push(data[i].y); 
+          z.push(data[i].z)
+          $('#log-db').append('Received #'+i+': '+data[i].x+', '+data[i].y+'<br>').html(); 
+
+      }
+   
+        trace = {
+            x: xl,
+            y: yl,
+            name:'grafy',
+        };       
+        layout = {
+          title: 'Data',
+          xaxis: {
+              title: 'x',
+          },
+          yaxis: {
+              title: 'y',
+              //range: [-1,1]
+          }
+        };
+        console.log(trace);
+        var traces = new Array();
+        traces.push(trace);
+        Plotly.newPlot($('#plotdiv-db')[0], traces, layout); 
+      }
+    }).done(function( o ) {
+       // do something
+       console.log("log")
+    });    
+          
+      });                    
       });
     </script>
  </head>
  <body>
-  <h1>Flask-SocketIO Test</h1>
-  <h2>Send:</h2>
-  <form id="emit" method="POST" action='#'>
-    <input type="text" name="emit_value" id="emit_value" placeholder="Amplituda">
-    <input type="submit" value="Echo">
-  </form>
+  <h1>Skuskove zadanie</h1>
+  <h2>Martin Stolar</h2>
+  <h3>Send to arduino:</h3>
+
+  <button id="emit_value" type="submit" value="false">Blink LED</button>
+  <br>
+  <h3>start read data:</h3>
   <button id="buttonVal" type="submit" value="start">Start</button>
   <form id="disconnect" method="POST" action="#">
     <input type="submit" value="Disconnect">
@@ -143,6 +265,9 @@
         <li><a href="#tabs-1">Received data</a></li>
         <li><a href="#tabs-2">Graf</a></li>
         <li><a href="#tabs-3">Cifernik</a></li>
+        <li><a href="#tabs-4">Databaza</a></li>
+        <li><a href="#tabs-5">Subor</a></li>
+
       </ul>
       <div id="tabs-1">
           <h2>Receive:</h2>
@@ -155,8 +280,28 @@
       </div>
       <div id="tabs-3">
         <h2>Cifernik:</h2>
-		  <canvas id="canvasID"></canvas>
-
+        <canvas id="canvasID"></canvas>
+      </div>
+      
+      <div id="tabs-4">
+        <h2>Data z databazy:</h2>
+        <form id="emit-db" method="POST" action='#'>
+            <input type="text" name="emit_value-db" id="emit_value-db" placeholder="get row">
+            <input id="buttonclick-db" type="button" value="Echo">
+        </form>
+        <div id="plotdiv-db" style="width:600px;height:250px;"></div>
+                  <h2>Receive:</h2>
+          <div id="log-db"></div>
+      </div>
+      <div id="tabs-5">
+        <h2>Data zo suboru:</h2>
+        <form id="emit-file" method="POST" action='#'>
+            <input type="text" name="emit_value-file" id="emit_value-file" placeholder="get row">
+            <input id="buttonclick" type="button" value="Echo">
+        </form>
+            <div id="plotdiv-file" style="width:600px;height:250px;"></div>
+          <h2>Receive:</h2>
+          <div id="log-file"></div>
       </div>
     </div>
   

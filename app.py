@@ -29,13 +29,13 @@ socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 thread_lock = Lock() 
 
+hodnota = 0
 
 def background_thread(args):
     count = 0  
     dataCounter = 0 
     dataList = []  
     db = MySQLdb.connect(host=myhost,user=myuser,passwd=mypasswd,db=mydb)
-
     while True:
         if args:
           A = dict(args).get('A')
@@ -44,24 +44,24 @@ def background_thread(args):
           A = 1
           dbV = 'nieco'  
         #print A
-        print(dbV) 
-        print(args)
-        print(float(ser.readline()))
+        print(args) 
+        print(dbV)
+        print(str(ser.readline()))
         socketio.sleep(2)
         count += 1
-        dataCounter +=1
         prem = random.random()
         if dbV == 'start':
+          dataCounter +=1
           dataDict = {
             "t": time.time(),
             "x": dataCounter,
             "y": float(ser.readline()),
             }
           dataList.append(dataDict)
+          socketio.emit('my_response',{'data': float(ser.readline()), 'count': dataCounter},namespace='/test')  
         else:
           if len(dataList)>0:
             print('---------')
-            print(str(dataList))
             fuj = str(dataList).replace("'", "\"")
             print(fuj)
             cursor = db.cursor()
@@ -76,9 +76,7 @@ def background_thread(args):
             
           dataList = []
           dataCounter = 0
-          socketio.emit('my_response',
-                      {'data': float(ser.readline()), 'count': count},
-                      namespace='/test')  
+         
     db.close()
 
 @app.route('/file', methods=['GET', 'POST'])
@@ -120,18 +118,18 @@ def dbdata(num):
   return str(rv[0])
     
 @socketio.on('my_event', namespace='/test')
-def test_message(message):   
+def test_message(message):
+    ser.write(b'1\r\n')
     session['receive_count'] = session.get('receive_count', 0) + 1 
     session['A'] = message['value']    
-    emit('my_response',
-         {'data': message['value'], 'count': session['receive_count']})
+    #emit('my_response',
+     #    {'data': message['value'], 'count': session['receive_count']})
 
 @socketio.on('db_event', namespace='/test')
 def db_message(message):   
-#    session['receive_count'] = session.get('receive_count', 0) + 1 
+    session['receive_count'] = session.get('receive_count', 0) + 1 
     session['db_value'] = message['value']    
-#    emit('my_response',
-#         {'data': message['value'], 'count': session['receive_count']})
+    
 
 @socketio.on('disconnect_request', namespace='/test')
 def disconnect_request():
